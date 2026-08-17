@@ -205,7 +205,7 @@ export default function Reservas({ autoOpen }) {
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-quinta-500 uppercase tracking-wider mb-1">Fecha Salida</label>
-                  <CustomDatePicker value={fechaFin} onChange={setFechaFin} />
+                  <CustomDatePicker value={fechaFin} onChange={setFechaFin} align="right" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -579,7 +579,7 @@ function CustomSelect({ value, onChange, options }) {
   );
 }
 
-function CustomDatePicker({ value, onChange }) {
+function CustomDatePicker({ value, onChange, align = 'left' }) {
   const [isOpen, setIsOpen] = useState(false);
   const [currentDate, setCurrentDate] = useState(value ? new Date(value + 'T00:00:00') : new Date());
 
@@ -634,7 +634,7 @@ function CustomDatePicker({ value, onChange }) {
       {isOpen && (
         <>
           <div className="fixed inset-0 z-20" onClick={() => setIsOpen(false)} />
-          <div className="absolute z-30 mt-1.5 w-[280px] left-0 md:left-auto md:right-0 bg-white border border-quinta-100 rounded-xl shadow-lg p-3 animate-scaleUp space-y-3 font-sans">
+          <div className={`absolute z-30 mt-1.5 w-[280px] ${align === 'right' ? 'right-0' : 'left-0'} bg-white border border-quinta-100 rounded-xl shadow-lg p-3 animate-scaleUp space-y-3 font-sans`}>
             <div className="flex items-center justify-between">
               <button type="button" onClick={handlePrevMonth} className="p-1 hover:bg-quinta-100 rounded">
                 <ChevronLeft size={16} />
