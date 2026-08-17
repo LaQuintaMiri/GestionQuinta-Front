@@ -10,6 +10,13 @@ export default function CalendarView() {
   const [loading, setLoading] = useState(true);
   const [selectedDayEvents, setSelectedDayEvents] = useState({ date: null, events: [] });
 
+  const getLocalDayStr = (d) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+
   useEffect(() => {
     fetchEvents();
   }, []);
@@ -86,7 +93,7 @@ export default function CalendarView() {
 
   // Helper para buscar reservas en una fecha dada
   const getDayStatus = (cellDate) => {
-    const dateStr = cellDate.toISOString().split('T')[0];
+    const dateStr = getLocalDayStr(cellDate);
     
     // Buscar reservas confirmadas
     const res = reservas.find(r => 
@@ -105,7 +112,8 @@ export default function CalendarView() {
 
     // Buscar visitas
     const vis = visitas.find(v => {
-      const visitDateStr = new Date(v.fecha_hora_visita).toISOString().split('T')[0];
+      const vDate = new Date(v.fecha_hora_visita);
+      const visitDateStr = getLocalDayStr(vDate);
       return visitDateStr === dateStr;
     });
     if (vis) return { status: 'visita', data: vis };
@@ -114,7 +122,7 @@ export default function CalendarView() {
   };
 
   const handleCellClick = (cellDate) => {
-    const dateStr = cellDate.toISOString().split('T')[0];
+    const dateStr = getLocalDayStr(cellDate);
     const dayEvents = [];
 
     // Buscar reservas en esta fecha
@@ -133,7 +141,8 @@ export default function CalendarView() {
 
     // Buscar visitas
     visitas.forEach(v => {
-      const visitDateStr = new Date(v.fecha_hora_visita).toISOString().split('T')[0];
+      const vDate = new Date(v.fecha_hora_visita);
+      const visitDateStr = getLocalDayStr(vDate);
       if (visitDateStr === dateStr) {
         dayEvents.push({ type: 'visita', ...v });
       }

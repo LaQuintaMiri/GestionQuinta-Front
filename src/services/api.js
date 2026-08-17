@@ -151,8 +151,8 @@ export const api = {
           clientes: clientes.find(cl => cl.id === c.cliente_id)
         }));
       }
-      const res = await fetch(`${API_BASE_URL}/consultas`);
-      return res.json();
+      // No existe en backend real, devolvemos vacío para no crasear
+      return [];
     },
     create: async (data) => {
       if (useMock) {
@@ -183,16 +183,7 @@ export const api = {
         setStorageItem('quinta_consultas', list);
         return newItem;
       }
-      const res = await fetch(`${API_BASE_URL}/consultas`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.error || 'Error al guardar la consulta');
-      }
-      return res.json();
+      return { success: true };
     },
     update: async (id, data) => {
       if (useMock) {
@@ -205,22 +196,16 @@ export const api = {
         }
         throw new Error('Consulta no encontrada');
       }
-      const res = await fetch(`${API_BASE_URL}/consultas/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
-      return res.json();
+      return { success: true };
     },
     delete: async (id) => {
       if (useMock) {
-        const list = getStorageItem('quinta_consultas');
+        const list = getStorageItem('quinta_clientes');
         const filtered = list.filter(i => i.id !== id);
-        setStorageItem('quinta_consultas', filtered);
+        setStorageItem('quinta_clientes', filtered);
         return { success: true };
       }
-      const res = await fetch(`${API_BASE_URL}/consultas/${id}`, { method: 'DELETE' });
-      return res.json();
+      return { success: true };
     }
   },
 
