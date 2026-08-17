@@ -214,22 +214,22 @@ export default function Finanzas({ autoOpen }) {
 
               <div>
                 <label className="block text-xs font-bold text-quinta-500 uppercase tracking-wider mb-1">Monto y Divisa</label>
-                <div className="flex border border-quinta-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-quinta-500 focus-within:border-transparent bg-white">
+                <div className="flex border border-quinta-200 rounded-xl focus-within:ring-2 focus-within:ring-quinta-500 focus-within:border-transparent bg-white relative">
                   {/* Selector de Moneda (Izquierda) */}
-                  <div className="relative border-r border-quinta-100 bg-quinta-50/50 shrink-0 w-20">
+                  <div className="relative border-r border-quinta-100 bg-quinta-50/50 shrink-0 w-14 rounded-l-xl">
                     <button
                       type="button"
                       onClick={() => setIsOpenDivisa(!isOpenDivisa)}
-                      className="w-full h-full px-2.5 py-2 text-xs font-extrabold text-quinta-700 flex items-center justify-between focus:outline-none"
+                      className="w-full h-full px-2 py-2 text-xs font-extrabold text-quinta-700 flex items-center justify-between focus:outline-none"
                     >
                       <span>{divisa === 'USD' ? 'US$' : '$'}</span>
-                      <ChevronDown size={12} className="text-quinta-400" />
+                      <ChevronDown size={10} className="text-quinta-400" />
                     </button>
                     
                     {isOpenDivisa && (
                       <>
-                        <div className="fixed inset-0 z-20" onClick={() => setIsOpenDivisa(false)} />
-                        <div className="absolute z-30 mt-1.5 left-0 w-24 bg-white border border-quinta-100 rounded-xl shadow-lg py-1 animate-scaleUp">
+                        <div className="fixed inset-0 z-35" onClick={() => setIsOpenDivisa(false)} />
+                        <div className="absolute z-40 mt-1.5 left-0 w-24 bg-white border border-quinta-100 rounded-xl shadow-lg py-1 animate-scaleUp">
                           <button
                             type="button"
                             onClick={() => { setDivisa('ARS'); setIsOpenDivisa(false); }}
@@ -256,7 +256,7 @@ export default function Finanzas({ autoOpen }) {
                     placeholder="0.00"
                     value={monto}
                     onChange={(e) => setMonto(e.target.value)}
-                    className="flex-1 min-w-0 px-3 py-2 text-sm text-quinta-900 placeholder-quinta-300 focus:outline-none bg-transparent"
+                    className="flex-1 min-w-0 px-3 py-2 text-sm text-quinta-900 placeholder-quinta-300 focus:outline-none bg-transparent rounded-r-xl"
                   />
                 </div>
               </div>

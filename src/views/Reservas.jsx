@@ -211,22 +211,22 @@ export default function Reservas({ autoOpen }) {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-quinta-500 uppercase tracking-wider mb-1">Monto Total</label>
-                  <div className="flex border border-quinta-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-quinta-500 focus-within:border-transparent bg-white">
+                  <div className="flex border border-quinta-200 rounded-xl focus-within:ring-2 focus-within:ring-quinta-500 focus-within:border-transparent bg-white relative">
                     {/* Selector de Moneda (Izquierda) */}
-                    <div className="relative border-r border-quinta-100 bg-quinta-50/50 shrink-0 w-20">
+                    <div className="relative border-r border-quinta-100 bg-quinta-50/50 shrink-0 w-14 rounded-l-xl">
                       <button
                         type="button"
                         onClick={() => setIsOpenDivisaTotal(!isOpenDivisaTotal)}
-                        className="w-full h-full px-2.5 py-2 text-xs font-extrabold text-quinta-700 flex items-center justify-between focus:outline-none"
+                        className="w-full h-full px-2 py-2 text-xs font-extrabold text-quinta-700 flex items-center justify-between focus:outline-none"
                       >
                         <span>{divisaTotal === 'USD' ? 'US$' : '$'}</span>
-                        <ChevronDown size={12} className="text-quinta-400" />
+                        <ChevronDown size={10} className="text-quinta-400" />
                       </button>
                       
                       {isOpenDivisaTotal && (
                         <>
-                          <div className="fixed inset-0 z-20" onClick={() => setIsOpenDivisaTotal(false)} />
-                          <div className="absolute z-30 mt-1.5 left-0 w-24 bg-white border border-quinta-100 rounded-xl shadow-lg py-1 animate-scaleUp">
+                          <div className="fixed inset-0 z-35" onClick={() => setIsOpenDivisaTotal(false)} />
+                          <div className="absolute z-40 mt-1.5 left-0 w-24 bg-white border border-quinta-100 rounded-xl shadow-lg py-1 animate-scaleUp">
                             <button
                               type="button"
                               onClick={() => { setDivisaTotal('ARS'); setIsOpenDivisaTotal(false); }}
@@ -253,29 +253,29 @@ export default function Reservas({ autoOpen }) {
                       placeholder="Total"
                       value={montoTotal}
                       onChange={(e) => setMontoTotal(e.target.value)}
-                      className="flex-1 min-w-0 px-3 py-2 text-sm text-quinta-900 placeholder-quinta-300 focus:outline-none bg-transparent"
+                      className="flex-1 min-w-0 px-3 py-2 text-sm text-quinta-900 placeholder-quinta-300 focus:outline-none bg-transparent rounded-r-xl"
                     />
                   </div>
                 </div>
 
                 <div>
                   <label className="block text-xs font-bold text-quinta-500 uppercase tracking-wider mb-1">Monto Seña</label>
-                  <div className="flex border border-quinta-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-quinta-500 focus-within:border-transparent bg-white">
+                  <div className="flex border border-quinta-200 rounded-xl focus-within:ring-2 focus-within:ring-quinta-500 focus-within:border-transparent bg-white relative">
                     {/* Selector de Moneda (Izquierda) */}
-                    <div className="relative border-r border-quinta-100 bg-quinta-50/50 shrink-0 w-20">
+                    <div className="relative border-r border-quinta-100 bg-quinta-50/50 shrink-0 w-14 rounded-l-xl">
                       <button
                         type="button"
                         onClick={() => setIsOpenDivisaSenia(!isOpenDivisaSenia)}
-                        className="w-full h-full px-2.5 py-2 text-xs font-extrabold text-quinta-700 flex items-center justify-between focus:outline-none"
+                        className="w-full h-full px-2 py-2 text-xs font-extrabold text-quinta-700 flex items-center justify-between focus:outline-none"
                       >
                         <span>{divisaSenia === 'USD' ? 'US$' : '$'}</span>
-                        <ChevronDown size={12} className="text-quinta-400" />
+                        <ChevronDown size={10} className="text-quinta-400" />
                       </button>
                       
                       {isOpenDivisaSenia && (
                         <>
-                          <div className="fixed inset-0 z-20" onClick={() => setIsOpenDivisaSenia(false)} />
-                          <div className="absolute z-30 mt-1.5 left-0 w-24 bg-white border border-quinta-100 rounded-xl shadow-lg py-1 animate-scaleUp">
+                          <div className="fixed inset-0 z-35" onClick={() => setIsOpenDivisaSenia(false)} />
+                          <div className="absolute z-40 mt-1.5 left-0 w-24 bg-white border border-quinta-100 rounded-xl shadow-lg py-1 animate-scaleUp">
                             <button
                               type="button"
                               onClick={() => { setDivisaSenia('ARS'); setIsOpenDivisaSenia(false); }}
@@ -301,7 +301,7 @@ export default function Reservas({ autoOpen }) {
                       placeholder="Seña"
                       value={montoSenia}
                       onChange={(e) => setMontoSenia(e.target.value)}
-                      className="flex-1 min-w-0 px-3 py-2 text-sm text-quinta-900 placeholder-quinta-300 focus:outline-none bg-transparent"
+                      className="flex-1 min-w-0 px-3 py-2 text-sm text-quinta-900 placeholder-quinta-300 focus:outline-none bg-transparent rounded-r-xl"
                     />
                   </div>
                 </div>
