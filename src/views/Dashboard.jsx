@@ -12,6 +12,7 @@ import {
   Home,
   Search,
   Check,
+  X,
   XCircle,
   AlertCircle
 } from 'lucide-react';
@@ -37,6 +38,7 @@ export default function Dashboard({ onViewChange, onOpenQuickAction }) {
   const [checkResult, setCheckResult] = useState(null);
   const [visitResult, setVisitResult] = useState(null);
   const [miniCalDate, setMiniCalDate] = useState(new Date());
+  const [shareModal, setShareModal] = useState(null);
 
   const getMiniCalCells = () => {
     const y = miniCalDate.getFullYear();
@@ -226,21 +228,10 @@ export default function Dashboard({ onViewChange, onOpenQuickAction }) {
       .replace('{fecha}', formattedStart)
       .replace('{nombre}', 'cliente');
 
-    const phoneInput = window.prompt(
-      "Ingresa el WhatsApp del cliente (Ej: 54911...).\nSi lo dejas vacío, el mensaje se copiará al portapapeles para que lo pegues donde quieras:", 
-      ""
-    );
-
-    if (phoneInput === null) return;
-
-    if (phoneInput.trim() === '') {
-      navigator.clipboard.writeText(msg);
-      alert("¡Mensaje copiado al portapapeles! Ya puedes pegarlo en WhatsApp.");
-    } else {
-      const cleanPhone = phoneInput.replace(/[^\d]/g, '');
-      const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`;
-      window.open(url, '_blank');
-    }
+    setShareModal({
+      phone: '',
+      message: msg
+    });
   };
 
   if (loading) {
@@ -713,6 +704,77 @@ export default function Dashboard({ onViewChange, onOpenQuickAction }) {
           </div>
         </div>
 
+      {/* Modal Personalizado para Compartir por WhatsApp */}
+      {shareModal && (
+        <div className="fixed inset-0 bg-quinta-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl border border-quinta-100 w-full max-w-md p-6 relative shadow-2xl animate-scaleUp space-y-4">
+            <button 
+              onClick={() => setShareModal(null)} 
+              className="absolute top-4 right-4 text-quinta-400 hover:text-quinta-600 transition-all-300"
+            >
+              <X size={20} />
+            </button>
+            
+            <div className="space-y-1">
+              <h3 className="text-lg font-bold text-quinta-900">Responder por WhatsApp</h3>
+              <p className="text-xs text-quinta-500 font-medium">Envía la disponibilidad directamente sin registrar en la base de datos.</p>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-quinta-500 uppercase tracking-wider mb-1">WhatsApp del Cliente (Opcional)</label>
+                <input
+                  type="text"
+                  placeholder="Ej: 5491123456789"
+                  value={shareModal.phone}
+                  onChange={(e) => setShareModal(prev => ({ ...prev, phone: e.target.value }))}
+                  className="w-full px-3 py-2 border border-quinta-200 rounded-xl text-sm focus:ring-2 focus:ring-quinta-500 focus:outline-none"
+                />
+                <span className="text-[10px] text-quinta-400 font-medium mt-1 block">Si lo dejas vacío, podrás copiar el mensaje listo.</span>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-quinta-500 uppercase tracking-wider mb-1">Vista Previa del Mensaje</label>
+                <textarea
+                  rows={6}
+                  value={shareModal.message}
+                  onChange={(e) => setShareModal(prev => ({ ...prev, message: e.target.value }))}
+                  className="w-full px-3 py-2 border border-quinta-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-quinta-500 focus:outline-none font-mono bg-quinta-50/50"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(shareModal.message);
+                  alert("¡Mensaje copiado al portapapeles! Ya puedes pegarlo en WhatsApp.");
+                  setShareModal(null);
+                }}
+                className="flex-1 py-2.5 bg-quinta-100 hover:bg-quinta-200 text-quinta-700 font-bold rounded-xl text-xs transition-all-300"
+              >
+                Copiar Mensaje
+              </button>
+              <button
+                onClick={() => {
+                  const cleanPhone = shareModal.phone.replace(/[^\d]/g, '');
+                  if (cleanPhone) {
+                    const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(shareModal.message)}`;
+                    window.open(url, '_blank');
+                  } else {
+                    navigator.clipboard.writeText(shareModal.message);
+                    alert("No ingresaste un número. ¡Mensaje copiado al portapapeles!");
+                  }
+                  setShareModal(null);
+                }}
+                className="flex-1 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl text-xs shadow-md shadow-emerald-500/25 transition-all-300"
+              >
+                Abrir WhatsApp
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       </div>
     </div>
   );

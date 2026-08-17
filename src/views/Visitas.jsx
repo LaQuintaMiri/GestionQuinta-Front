@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
-import { MapPin, Plus, Trash2, X, AlertTriangle, CheckCircle } from 'lucide-react';
+import { MapPin, Plus, Trash2, X, AlertTriangle, CheckCircle, Send } from 'lucide-react';
 
 export default function Visitas({ autoOpen }) {
   const [visitas, setVisitas] = useState([]);
@@ -8,6 +8,8 @@ export default function Visitas({ autoOpen }) {
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(autoOpen || false);
   const [conflictWarning, setConflictWarning] = useState(null); // Para guardar advertencia de 1:30hs
+  const [plantillas, setPlantillas] = useState([]);
+  const [shareModal, setShareModal] = useState(null); // { phone: '', message: '' }
 
   // Formulario nuevo
   const [clienteId, setClienteId] = useState('');
@@ -32,12 +34,14 @@ export default function Visitas({ autoOpen }) {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [visList, clList] = await Promise.all([
+      const [visList, clList, plList] = await Promise.all([
         api.visitas.list(),
-        api.clientes.list()
+        api.clientes.list(),
+        api.plantillas.list().catch(() => [])
       ]);
       setVisitas(visList);
       setClientes(clList);
+      setPlantillas(plList);
     } catch (e) {
       console.error(e);
     } finally {
@@ -90,6 +94,30 @@ export default function Visitas({ autoOpen }) {
     } catch (e) {
       console.error(e);
     }
+  };
+
+  const handleSendReminder = (visit) => {
+    const template = plantillas.find(p => p.titulo.toLowerCase().includes('visita') || p.titulo.toLowerCase().includes('recordatorio')) || 
+      { mensaje: 'Hola {nombre}, te recordamos la visita a la quinta el día {fecha} a las {hora} hs.' };
+
+    const dateObj = new Date(visit.fecha_hora_visita);
+    const formattedDate = dateObj.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
+    const formattedTime = dateObj.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+
+    const clientName = visit.clientes?.nombre || visit.nombre_visitante || 'cliente';
+    
+    let msg = template.mensaje
+      .replace('{nombre}', clientName)
+      .replace('{fecha}', formattedDate)
+      .replace('{hora}', formattedTime);
+
+    const phone = visit.clientes?.telefono || '';
+
+    setShareModal({
+      phone,
+      message: msg,
+      nombre: clientName
+    });
   };
 
   // Helper para agrupar visitas del mismo día y calcular si hay conflictos visibles en la lista
@@ -269,12 +297,22 @@ export default function Visitas({ autoOpen }) {
                     </p>
                   </div>
 
-                  <button
-                    onClick={() => handleDelete(visit.id)}
-                    className="p-1.5 hover:bg-red-50 text-red-500 rounded-lg transition-all-300"
-                  >
-                    <Trash2 size={16} />
-                  </button>
+                  <div className="flex gap-1">
+                    <button
+                      onClick={() => handleSendReminder(visit)}
+                      title="Enviar Recordatorio por WhatsApp"
+                      className="p-1.5 hover:bg-emerald-50 text-emerald-600 rounded-lg transition-all-300"
+                    >
+                      <Send size={16} />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(visit.id)}
+                      title="Eliminar Visita"
+                      className="p-1.5 hover:bg-red-50 text-red-500 rounded-lg transition-all-300"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
                 </div>
 
                 {visit.motivo && (
@@ -296,6 +334,77 @@ export default function Visitas({ autoOpen }) {
             <p className="text-sm text-quinta-400 font-semibold">No hay visitas programadas.</p>
           </div>
         )}
+      {/* Modal Personalizado para Compartir por WhatsApp */}
+      {shareModal && (
+        <div className="fixed inset-0 bg-quinta-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl border border-quinta-100 w-full max-w-md p-6 relative shadow-2xl animate-scaleUp space-y-4">
+            <button 
+              onClick={() => setShareModal(null)} 
+              className="absolute top-4 right-4 text-quinta-400 hover:text-quinta-600 transition-all-300"
+            >
+              <X size={20} />
+            </button>
+            
+            <div className="space-y-1">
+              <h3 className="text-lg font-bold text-quinta-900">Enviar Recordatorio</h3>
+              <p className="text-xs text-quinta-500 font-medium">Recordatorio de visita para {shareModal.nombre}.</p>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-quinta-500 uppercase tracking-wider mb-1">WhatsApp del Cliente</label>
+                <input
+                  type="text"
+                  placeholder="Ej: 5491123456789"
+                  value={shareModal.phone}
+                  onChange={(e) => setShareModal(prev => ({ ...prev, phone: e.target.value }))}
+                  className="w-full px-3 py-2 border border-quinta-200 rounded-xl text-sm focus:ring-2 focus:ring-quinta-500 focus:outline-none"
+                />
+                <span className="text-[10px] text-quinta-400 font-medium mt-1 block">Si lo dejas vacío, podrás copiar el mensaje listo.</span>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-quinta-500 uppercase tracking-wider mb-1">Vista Previa del Mensaje</label>
+                <textarea
+                  rows={6}
+                  value={shareModal.message}
+                  onChange={(e) => setShareModal(prev => ({ ...prev, message: e.target.value }))}
+                  className="w-full px-3 py-2 border border-quinta-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-quinta-500 focus:outline-none font-mono bg-quinta-50/50"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(shareModal.message);
+                  alert("¡Mensaje copiado al portapapeles! Ya puedes pegarlo en WhatsApp.");
+                  setShareModal(null);
+                }}
+                className="flex-1 py-2.5 bg-quinta-100 hover:bg-quinta-200 text-quinta-700 font-bold rounded-xl text-xs transition-all-300"
+              >
+                Copiar Mensaje
+              </button>
+              <button
+                onClick={() => {
+                  const cleanPhone = shareModal.phone.replace(/[^\d]/g, '');
+                  if (cleanPhone) {
+                    const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(shareModal.message)}`;
+                    window.open(url, '_blank');
+                  } else {
+                    navigator.clipboard.writeText(shareModal.message);
+                    alert("No ingresaste un número. ¡Mensaje copiado al portapapeles!");
+                  }
+                  setShareModal(null);
+                }}
+                className="flex-1 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl text-xs shadow-md shadow-emerald-500/25 transition-all-300"
+              >
+                Abrir WhatsApp
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       </div>
     </div>
   );
