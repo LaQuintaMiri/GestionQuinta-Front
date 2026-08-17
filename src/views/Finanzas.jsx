@@ -18,6 +18,7 @@ export default function Finanzas({ autoOpen }) {
   const [tipo, setTipo] = useState('egreso');
   const [monto, setMonto] = useState('');
   const [divisa, setDivisa] = useState('ARS');
+  const [isOpenDivisa, setIsOpenDivisa] = useState(false);
   const [categoria, setCategoria] = useState('mantenimiento');
   const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0]);
   const [descripcion, setDescripcion] = useState('');
@@ -213,22 +214,49 @@ export default function Finanzas({ autoOpen }) {
 
               <div>
                 <label className="block text-xs font-bold text-quinta-500 uppercase tracking-wider mb-1">Monto y Divisa</label>
-                <div className="flex gap-2">
+                <div className="flex border border-quinta-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-quinta-500 focus-within:border-transparent bg-white">
+                  {/* Selector de Moneda (Izquierda) */}
+                  <div className="relative border-r border-quinta-100 bg-quinta-50/50 shrink-0 w-20">
+                    <button
+                      type="button"
+                      onClick={() => setIsOpenDivisa(!isOpenDivisa)}
+                      className="w-full h-full px-2.5 py-2 text-xs font-extrabold text-quinta-700 flex items-center justify-between focus:outline-none"
+                    >
+                      <span>{divisa === 'USD' ? 'US$' : '$'}</span>
+                      <ChevronDown size={12} className="text-quinta-400" />
+                    </button>
+                    
+                    {isOpenDivisa && (
+                      <>
+                        <div className="fixed inset-0 z-20" onClick={() => setIsOpenDivisa(false)} />
+                        <div className="absolute z-30 mt-1.5 left-0 w-24 bg-white border border-quinta-100 rounded-xl shadow-lg py-1 animate-scaleUp">
+                          <button
+                            type="button"
+                            onClick={() => { setDivisa('ARS'); setIsOpenDivisa(false); }}
+                            className="w-full px-3 py-1.5 text-left text-xs font-bold text-quinta-600 hover:bg-quinta-50 transition-colors"
+                          >
+                            ARS ($)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => { setDivisa('USD'); setIsOpenDivisa(false); }}
+                            className="w-full px-3 py-1.5 text-left text-xs font-bold text-quinta-600 hover:bg-quinta-50 transition-colors"
+                          >
+                            USD (US$)
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Campo de Número (Derecha) */}
                   <input
                     type="number"
                     required
                     placeholder="0.00"
                     value={monto}
                     onChange={(e) => setMonto(e.target.value)}
-                    className="flex-1 min-w-0 px-3 py-2 border border-quinta-200 rounded-xl text-sm focus:ring-2 focus:ring-quinta-500 focus:outline-none"
-                  />
-                  <CustomSelect
-                    value={divisa}
-                    onChange={setDivisa}
-                    options={[
-                      { value: 'ARS', label: '$' },
-                      { value: 'USD', label: 'US$' }
-                    ]}
+                    className="flex-1 min-w-0 px-3 py-2 text-sm text-quinta-900 placeholder-quinta-300 focus:outline-none bg-transparent"
                   />
                 </div>
               </div>
