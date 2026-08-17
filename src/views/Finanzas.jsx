@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
-import { TrendingUp, TrendingDown, DollarSign, Plus, Trash2, X } from 'lucide-react';
+import { TrendingUp, TrendingDown, DollarSign, Plus, Trash2, X, ChevronDown, ChevronLeft, ChevronRight, CalendarDays } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 export default function Finanzas({ autoOpen }) {
@@ -222,51 +222,39 @@ export default function Finanzas({ autoOpen }) {
                     onChange={(e) => setMonto(e.target.value)}
                     className="flex-1 min-w-0 px-3 py-2 border border-quinta-200 rounded-xl text-sm focus:ring-2 focus:ring-quinta-500 focus:outline-none"
                   />
-                  <select
+                  <CustomSelect
                     value={divisa}
-                    onChange={(e) => setDivisa(e.target.value)}
-                    className="px-3 py-2 border border-quinta-200 rounded-xl text-sm bg-white focus:ring-2 focus:ring-quinta-500 font-bold text-quinta-700 shrink-0"
-                  >
-                    <option value="ARS">ARS ($)</option>
-                    <option value="USD">USD (US$)</option>
-                  </select>
+                    onChange={setDivisa}
+                    options={[
+                      { value: 'ARS', label: '$' },
+                      { value: 'USD', label: 'US$' }
+                    ]}
+                  />
                 </div>
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-quinta-500 uppercase tracking-wider mb-1">Categoría</label>
-                <select
+                <CustomSelect
                   value={categoria}
-                  onChange={(e) => setCategoria(e.target.value)}
-                  className="w-full px-3 py-2 border border-quinta-200 rounded-xl text-sm bg-white focus:ring-2 focus:ring-quinta-500"
-                >
-                  {tipo === 'ingreso' ? (
-                    <>
-                      <option value="reserva_senia">Seña de Reserva</option>
-                      <option value="reserva_saldo">Saldo de Reserva</option>
-                      <option value="otros">Otros Ingresos</option>
-                    </>
-                  ) : (
-                    <>
-                      <option value="mantenimiento">Mantenimiento (Corte pasto/jardín)</option>
-                      <option value="limpieza">Limpieza (Servicios/Cloro)</option>
-                      <option value="servicios">Servicios (Luz, gas, internet)</option>
-                      <option value="impuestos">Impuestos / Tasas</option>
-                      <option value="otros">Otros Gastos</option>
-                    </>
-                  )}
-                </select>
+                  onChange={setCategoria}
+                  options={tipo === 'ingreso' ? [
+                    { value: 'reserva_senia', label: 'Seña de Reserva' },
+                    { value: 'reserva_saldo', label: 'Saldo de Reserva' },
+                    { value: 'otros', label: 'Otros Ingresos' }
+                  ] : [
+                    { value: 'mantenimiento', label: 'Mantenimiento (Corte pasto/jardín)' },
+                    { value: 'limpieza', label: 'Limpieza (Servicios/Cloro)' },
+                    { value: 'servicios', label: 'Servicios (Luz, gas, internet)' },
+                    { value: 'impuestos', label: 'Impuestos / Tasas' },
+                    { value: 'otros', label: 'Otros Gastos' }
+                  ]}
+                />
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-quinta-500 uppercase tracking-wider mb-1">Fecha</label>
-                <input
-                  type="date"
-                  required
-                  value={fecha}
-                  onChange={(e) => setFecha(e.target.value)}
-                  className="w-full px-3 py-2 border border-quinta-200 rounded-xl text-sm focus:ring-2 focus:ring-quinta-500"
-                />
+                <CustomDatePicker value={fecha} onChange={setFecha} />
               </div>
 
               <div>
@@ -355,6 +343,149 @@ export default function Finanzas({ autoOpen }) {
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+// COMPONENTES AUXILIARES CUSTOMIZADOS
+function CustomSelect({ value, onChange, options }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const selectedOpt = options.find(o => o.value === value);
+
+  return (
+    <div className="relative flex-1 min-w-0">
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full px-3 py-2 border border-quinta-200 rounded-xl text-sm bg-white focus:ring-2 focus:ring-quinta-500 text-left flex justify-between items-center font-semibold text-quinta-800 focus:outline-none"
+      >
+        <span className="truncate">{selectedOpt ? selectedOpt.label : 'Seleccionar...'}</span>
+        <ChevronDown size={14} className={`text-quinta-400 transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+      
+      {isOpen && (
+        <>
+          <div className="fixed inset-0 z-20" onClick={() => setIsOpen(false)} />
+          <div className="absolute z-30 mt-1.5 w-full bg-white border border-quinta-100 rounded-xl shadow-lg py-1 animate-scaleUp max-h-60 overflow-y-auto">
+            {options.map(opt => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => {
+                  onChange(opt.value);
+                  setIsOpen(false);
+                }}
+                className={`w-full px-3 py-2 text-left text-xs font-semibold hover:bg-quinta-50 transition-colors ${
+                  opt.value === value ? 'text-quinta-900 bg-quinta-50/50 font-extrabold' : 'text-quinta-600'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function CustomDatePicker({ value, onChange }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [currentDate, setCurrentDate] = useState(value ? new Date(value + 'T00:00:00') : new Date());
+
+  const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
+  const firstDayIndex = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay();
+  const startOffset = firstDayIndex === 0 ? 6 : firstDayIndex - 1;
+
+  const cells = [];
+  const prevDays = new Date(currentDate.getFullYear(), currentDate.getMonth(), 0).getDate();
+  for (let i = startOffset - 1; i >= 0; i--) {
+    cells.push({ date: new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, prevDays - i), isCurrent: false });
+  }
+  for (let i = 1; i <= daysInMonth; i++) {
+    cells.push({ date: new Date(currentDate.getFullYear(), currentDate.getMonth(), i), isCurrent: true });
+  }
+  const total = cells.length;
+  const remaining = total % 7 === 0 ? 0 : 7 - (total % 7);
+  for (let i = 1; i <= remaining; i++) {
+    cells.push({ date: new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, i), isCurrent: false });
+  }
+
+  const handlePrevMonth = () => {
+    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
+  };
+  const handleNextMonth = () => {
+    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+  };
+
+  const handleSelectDay = (cellDate) => {
+    const y = cellDate.getFullYear();
+    const m = String(cellDate.getMonth() + 1).padStart(2, '0');
+    const d = String(cellDate.getDate()).padStart(2, '0');
+    onChange(`${y}-${m}-${d}`);
+    setIsOpen(false);
+  };
+
+  const displayVal = value 
+    ? new Date(value + 'T00:00:00').toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' })
+    : 'Seleccionar fecha...';
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full px-3 py-2 border border-quinta-200 rounded-xl text-sm bg-white focus:ring-2 focus:ring-quinta-500 text-left flex justify-between items-center font-semibold text-quinta-850 focus:outline-none"
+      >
+        <span>{displayVal}</span>
+        <CalendarDays size={16} className="text-quinta-400 shrink-0" />
+      </button>
+
+      {isOpen && (
+        <>
+          <div className="fixed inset-0 z-20" onClick={() => setIsOpen(false)} />
+          <div className="absolute z-30 mt-1.5 w-[280px] left-0 md:left-auto md:right-0 bg-white border border-quinta-100 rounded-xl shadow-lg p-3 animate-scaleUp space-y-3 font-sans">
+            <div className="flex items-center justify-between">
+              <button type="button" onClick={handlePrevMonth} className="p-1 hover:bg-quinta-100 rounded">
+                <ChevronLeft size={16} />
+              </button>
+              <span className="text-xs font-bold text-quinta-900 capitalize">
+                {currentDate.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' })}
+              </span>
+              <button type="button" onClick={handleNextMonth} className="p-1 hover:bg-quinta-100 rounded">
+                <ChevronRight size={16} />
+              </button>
+            </div>
+            
+            <div className="grid grid-cols-7 text-center text-[10px] font-bold text-quinta-400 uppercase">
+              <span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span><span>D</span>
+            </div>
+
+            <div className="grid grid-cols-7 gap-1 text-center">
+              {cells.map((cell, idx) => {
+                const cStr = cell.date.toISOString().split('T')[0];
+                const isSelected = value === cStr;
+                return (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => handleSelectDay(cell.date)}
+                    className={`py-1 text-xs rounded transition-all-300 font-semibold ${
+                      isSelected 
+                        ? 'bg-quinta-500 text-white font-extrabold shadow-sm'
+                        : cell.isCurrent 
+                          ? 'text-quinta-850 hover:bg-quinta-50' 
+                          : 'text-quinta-300'
+                    }`}
+                  >
+                    {cell.date.getDate()}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
