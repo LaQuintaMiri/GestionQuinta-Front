@@ -108,7 +108,8 @@ export default function Dashboard({ onViewChange, onOpenQuickAction }) {
     );
 
     const visitasRango = visitas.filter(v => {
-      const visitDateStr = new Date(v.fecha_hora_visita).toISOString().split('T')[0];
+      const vDate = new Date(v.fecha_hora_visita);
+      const visitDateStr = `${vDate.getFullYear()}-${String(vDate.getMonth() + 1).padStart(2, '0')}-${String(vDate.getDate()).padStart(2, '0')}`;
       return visitDateStr >= start && visitDateStr <= end;
     });
 
@@ -135,7 +136,8 @@ export default function Dashboard({ onViewChange, onOpenQuickAction }) {
 
     const nearby = visitas.find(v => {
       const otherDt = new Date(v.fecha_hora_visita);
-      const sameDay = otherDt.toISOString().split('T')[0] === dateStr;
+      const otherDateStr = `${otherDt.getFullYear()}-${String(otherDt.getMonth() + 1).padStart(2, '0')}-${String(otherDt.getDate()).padStart(2, '0')}`;
+      const sameDay = otherDateStr === dateStr;
       if (!sameDay) return false;
       return Math.abs(targetDt.getTime() - otherDt.getTime()) < minDiffMs;
     });
@@ -183,7 +185,8 @@ export default function Dashboard({ onViewChange, onOpenQuickAction }) {
       });
 
       // Actividad de hoy (reservas y visitas)
-      const todayStr = new Date().toISOString().split('T')[0];
+      const now = new Date();
+      const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
       
       const reservasHoy = allReservas.filter(r => 
         r.estado_reserva !== 'cancelada' &&
@@ -191,7 +194,8 @@ export default function Dashboard({ onViewChange, onOpenQuickAction }) {
       );
 
       const visitasHoy = allVisitas.filter(v => {
-        const visitDateStr = new Date(v.fecha_hora_visita).toISOString().split('T')[0];
+        const vDate = new Date(v.fecha_hora_visita);
+        const visitDateStr = `${vDate.getFullYear()}-${String(vDate.getMonth() + 1).padStart(2, '0')}-${String(vDate.getDate()).padStart(2, '0')}`;
         return visitDateStr === todayStr;
       });
 
@@ -355,7 +359,10 @@ export default function Dashboard({ onViewChange, onOpenQuickAction }) {
 
           <div className="grid grid-cols-7 gap-[1px] bg-quinta-100 text-center">
             {getMiniCalCells().map((cell, idx) => {
-              const dStr = cell.date.toISOString().split('T')[0];
+              const yCell = cell.date.getFullYear();
+              const mCell = String(cell.date.getMonth() + 1).padStart(2, '0');
+              const dCell = String(cell.date.getDate()).padStart(2, '0');
+              const dStr = `${yCell}-${mCell}-${dCell}`;
               
               // Lógica de Selección de Rango o Día Único
               const isStart = startDate === dStr;
