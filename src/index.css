@@ -1,0 +1,62 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+@theme {
+  --color-quinta-50: #f4f7f4;
+  --color-quinta-100: #e5ece5;
+  --color-quinta-200: #cbdccb;
+  --color-quinta-300: #a3c2a3;
+  --color-quinta-400: #75a175;
+  --color-quinta-500: #548354;
+  --color-quinta-600: #406740;
+  --color-quinta-700: #345234;
+  --color-quinta-800: #2b422b;
+  --color-quinta-900: #243724;
+  --color-quinta-950: #111e11;
+
+  --color-tierra-50: #faf6f0;
+  --color-tierra-100: #f3eade;
+  --color-tierra-200: #e6d3bd;
+  --color-tierra-300: #d5b796;
+  --color-tierra-400: #c2976f;
+  --color-tierra-500: #b48055;
+  --color-tierra-600: #a66d47;
+  --color-tierra-700: #8a553a;
+  --color-tierra-800: #704533;
+  --color-tierra-900: #5c392c;
+  --color-tierra-950: #321c15;
+
+  --font-sans: 'Outfit', 'Inter', system-ui, sans-serif;
+}
+
+:root {
+  background-color: #f8faf8;
+  color: #1e2d1e;
+}
+
+body {
+  margin: 0;
+  font-family: 'Outfit', 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Clases utilitarias personalizadas */
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.glass-dark {
+  background: rgba(27, 43, 27, 0.8);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Transiciones fluidas */
+.transition-all-300 {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
