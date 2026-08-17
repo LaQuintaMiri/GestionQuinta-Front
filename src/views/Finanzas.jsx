@@ -5,14 +5,19 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 
 export default function Finanzas({ autoOpen }) {
   const [transacciones, setTransacciones] = useState([]);
-  const [resumen, setResumen] = useState({ ingresos: 0, egresos: 0, balance: 0 });
+  const [resumen, setResumen] = useState({
+    ingresosARS: 0, egresosARS: 0, balanceARS: 0,
+    ingresosUSD: 0, egresosUSD: 0, balanceUSD: 0
+  });
   const [resumenMensual, setResumenMensual] = useState({});
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(autoOpen || false);
+  const [activeCurrency, setActiveCurrency] = useState('ARS');
 
   // Formulario nuevo
   const [tipo, setTipo] = useState('egreso');
   const [monto, setMonto] = useState('');
+  const [divisa, setDivisa] = useState('ARS');
   const [categoria, setCategoria] = useState('mantenimiento');
   const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0]);
   const [descripcion, setDescripcion] = useState('');
@@ -29,7 +34,10 @@ export default function Finanzas({ autoOpen }) {
         api.transacciones.resumen()
       ]);
       setTransacciones(txList);
-      setResumen(resData.resumenGeneral || { ingresos: 0, egresos: 0, balance: 0 });
+      setResumen(resData.resumenGeneral || { 
+        ingresosARS: 0, egresosARS: 0, balanceARS: 0,
+        ingresosUSD: 0, egresosUSD: 0, balanceUSD: 0
+      });
       setResumenMensual(resData.resumenMensual || {});
     } catch (e) {
       console.error(e);
@@ -49,6 +57,7 @@ export default function Finanzas({ autoOpen }) {
       await api.transacciones.create({
         tipo,
         monto: parseFloat(monto),
+        divisa,
         categoria,
         fecha,
         descripcion
@@ -57,6 +66,7 @@ export default function Finanzas({ autoOpen }) {
       // Resetear
       setTipo('egreso');
       setMonto('');
+      setDivisa('ARS');
       setCategoria('mantenimiento');
       setFecha(new Date().toISOString().split('T')[0]);
       setDescripcion('');
@@ -83,11 +93,17 @@ export default function Finanzas({ autoOpen }) {
     const [year, month] = mes.split('-');
     const date = new Date(year, month - 1, 1);
     const label = date.toLocaleDateString('es-AR', { month: 'short', year: '2-digit' });
+    
+    const isUSD = activeCurrency === 'USD';
+    const ing = isUSD ? (info.ingresosUSD || 0) : (info.ingresosARS || 0);
+    const egr = isUSD ? (info.egresosUSD || 0) : (info.egresosARS || 0);
+    const bal = isUSD ? (info.balanceUSD || 0) : (info.balanceARS || 0);
+
     return {
       name: label,
-      Ingresos: info.ingresos,
-      Egresos: info.egresos,
-      Ganancia: info.balance
+      Ingresos: ing,
+      Egresos: egr,
+      Ganancia: bal
     };
   }).reverse(); // Más antiguo a más reciente
 
@@ -109,6 +125,11 @@ export default function Finanzas({ autoOpen }) {
     );
   }
 
+  const sym = activeCurrency === 'USD' ? 'US$' : '$';
+  const valIng = activeCurrency === 'USD' ? (resumen.ingresosUSD || 0) : (resumen.ingresosARS || 0);
+  const valEgr = activeCurrency === 'USD' ? (resumen.egresosUSD || 0) : (resumen.egresosARS || 0);
+  const valBal = activeCurrency === 'USD' ? (resumen.balanceUSD || 0) : (resumen.balanceARS || 0);
+
   return (
     <div className="space-y-6 pb-20 md:pb-6">
       <div className="flex items-center justify-between border-b border-quinta-100 pb-4">
@@ -121,22 +142,42 @@ export default function Finanzas({ autoOpen }) {
         </button>
       </div>
 
+      {/* Selector de Divisa de Visualización */}
+      <div className="flex bg-quinta-100/80 p-0.5 rounded-lg border border-quinta-200/50 w-fit">
+        <button
+          onClick={() => setActiveCurrency('ARS')}
+          className={`px-3 py-1 text-xs font-bold rounded-md transition-all-300 ${
+            activeCurrency === 'ARS' ? 'bg-white text-quinta-900 shadow-sm' : 'text-quinta-500'
+          }`}
+        >
+          Pesos (ARS)
+        </button>
+        <button
+          onClick={() => setActiveCurrency('USD')}
+          className={`px-3 py-1 text-xs font-bold rounded-md transition-all-300 ${
+            activeCurrency === 'USD' ? 'bg-white text-quinta-900 shadow-sm' : 'text-quinta-500'
+          }`}
+        >
+          Dólares (USD)
+        </button>
+      </div>
+
       {/* Tarjetas de Balances */}
       <div className="grid grid-cols-3 gap-3">
         <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-100 text-center space-y-1">
           <TrendingUp className="text-emerald-600 mx-auto" size={20} />
           <span className="text-[10px] font-bold text-emerald-800 uppercase block tracking-wider">Ingresos</span>
-          <span className="text-sm md:text-lg font-bold text-emerald-950 block">${resumen.ingresos.toLocaleString('es-AR')}</span>
+          <span className="text-sm md:text-lg font-bold text-emerald-950 block">{sym} {valIng.toLocaleString('es-AR')}</span>
         </div>
         <div className="bg-red-50 p-4 rounded-xl border border-red-100 text-center space-y-1">
           <TrendingDown className="text-red-600 mx-auto" size={20} />
           <span className="text-[10px] font-bold text-red-800 uppercase block tracking-wider">Gastos</span>
-          <span className="text-sm md:text-lg font-bold text-red-950 block">${resumen.egresos.toLocaleString('es-AR')}</span>
+          <span className="text-sm md:text-lg font-bold text-red-950 block">{sym} {valEgr.toLocaleString('es-AR')}</span>
         </div>
         <div className="bg-quinta-50 p-4 rounded-xl border border-quinta-200 text-center space-y-1">
           <DollarSign className="text-quinta-600 mx-auto" size={20} />
           <span className="text-[10px] font-bold text-quinta-800 uppercase block tracking-wider">Balance</span>
-          <span className="text-sm md:text-lg font-bold text-quinta-950 block">${resumen.balance.toLocaleString('es-AR')}</span>
+          <span className="text-sm md:text-lg font-bold text-quinta-950 block">{sym} {valBal.toLocaleString('es-AR')}</span>
         </div>
       </div>
 
@@ -171,15 +212,25 @@ export default function Finanzas({ autoOpen }) {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-quinta-500 uppercase tracking-wider mb-1">Monto ($)</label>
-                <input
-                  type="number"
-                  required
-                  placeholder="0.00"
-                  value={monto}
-                  onChange={(e) => setMonto(e.target.value)}
-                  className="w-full px-3 py-2 border border-quinta-200 rounded-xl text-sm focus:ring-2 focus:ring-quinta-500"
-                />
+                <label className="block text-xs font-bold text-quinta-500 uppercase tracking-wider mb-1">Monto y Divisa</label>
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    required
+                    placeholder="0.00"
+                    value={monto}
+                    onChange={(e) => setMonto(e.target.value)}
+                    className="flex-1 min-w-0 px-3 py-2 border border-quinta-200 rounded-xl text-sm focus:ring-2 focus:ring-quinta-500 focus:outline-none"
+                  />
+                  <select
+                    value={divisa}
+                    onChange={(e) => setDivisa(e.target.value)}
+                    className="px-3 py-2 border border-quinta-200 rounded-xl text-sm bg-white focus:ring-2 focus:ring-quinta-500 font-bold text-quinta-700 shrink-0"
+                  >
+                    <option value="ARS">ARS ($)</option>
+                    <option value="USD">USD (US$)</option>
+                  </select>
+                </div>
               </div>
 
               <div>
@@ -287,7 +338,7 @@ export default function Finanzas({ autoOpen }) {
 
                   <div className="flex items-center gap-3">
                     <span className={`font-bold text-sm ${isIngreso ? 'text-emerald-600' : 'text-red-500'}`}>
-                      {isIngreso ? '+' : '-'}${parseFloat(tx.monto).toLocaleString('es-AR')}
+                      {isIngreso ? '+' : '-'}{tx.divisa === 'USD' ? 'US$ ' : '$ '}{parseFloat(tx.monto).toLocaleString('es-AR')}
                     </span>
                     <button
                       onClick={() => handleDelete(tx.id)}

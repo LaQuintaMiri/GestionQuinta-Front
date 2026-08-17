@@ -32,6 +32,8 @@ export default function Reservas({ autoOpen }) {
   });
   const [montoTotal, setMontoTotal] = useState('');
   const [montoSenia, setMontoSenia] = useState('');
+  const [divisaTotal, setDivisaTotal] = useState('ARS');
+  const [divisaSenia, setDivisaSenia] = useState('ARS');
   const [estadoPago, setEstadoPago] = useState('pendiente');
   const [estadoReserva, setEstadoReserva] = useState('pre-reserva');
   const [notas, setNotas] = useState('');
@@ -71,6 +73,8 @@ export default function Reservas({ autoOpen }) {
         fecha_fin: fechaFin,
         monto_total: parseFloat(montoTotal),
         monto_senia: parseFloat(montoSenia || 0),
+        divisa_total: divisaTotal,
+        divisa_senia: divisaSenia,
         estado_pago: estadoPago,
         estado_reserva: estadoReserva,
         notas
@@ -83,6 +87,8 @@ export default function Reservas({ autoOpen }) {
       setFechaFin('');
       setMontoTotal('');
       setMontoSenia('');
+      setDivisaTotal('ARS');
+      setDivisaSenia('ARS');
       setEstadoPago('pendiente');
       setEstadoReserva('pre-reserva');
       setNotas('');
@@ -114,12 +120,18 @@ export default function Reservas({ autoOpen }) {
       return;
     }
 
-    const saldo = reserva.monto_total - reserva.monto_senia;
+    const symTotal = reserva.divisa_total === 'USD' ? 'US$' : '$';
+    const symSenia = reserva.divisa_senia === 'USD' ? 'US$' : '$';
+    const sameDivisa = reserva.divisa_total === reserva.divisa_senia;
+    
+    const saldoText = sameDivisa 
+      ? `${symTotal}${reserva.monto_total - reserva.monto_senia}`
+      : `${symTotal}${reserva.monto_total} (menos seña de ${symSenia}${reserva.monto_senia})`;
 
     const formattedMsg = template.mensaje
       .replace('{nombre}', reserva.clientes.nombre)
       .replace('{fecha}', `${reserva.fecha_inicio} al ${reserva.fecha_fin}`)
-      .replace('{monto}', templateTitle === 'Recordatorio de Saldo' ? `$${saldo}` : `$${reserva.monto_senia}`);
+      .replace('{monto}', templateTitle === 'Recordatorio de Saldo' ? saldoText : `${symSenia}${reserva.monto_senia}`);
 
     const cleanPhone = reserva.clientes.telefono.replace(/[^\d+]/g, '');
     const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(formattedMsg)}`;
@@ -209,24 +221,44 @@ export default function Reservas({ autoOpen }) {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-quinta-500 uppercase tracking-wider mb-1">Monto Total</label>
-                  <input
-                    type="number"
-                    required
-                    placeholder="Total"
-                    value={montoTotal}
-                    onChange={(e) => setMontoTotal(e.target.value)}
-                    className="w-full px-3 py-2 border border-quinta-200 rounded-xl text-sm focus:ring-2 focus:ring-quinta-500 focus:outline-none"
-                  />
+                  <div className="flex gap-1.5">
+                    <input
+                      type="number"
+                      required
+                      placeholder="Total"
+                      value={montoTotal}
+                      onChange={(e) => setMontoTotal(e.target.value)}
+                      className="flex-1 min-w-0 px-3 py-2 border border-quinta-200 rounded-xl text-sm focus:ring-2 focus:ring-quinta-500 focus:outline-none"
+                    />
+                    <select
+                      value={divisaTotal}
+                      onChange={(e) => setDivisaTotal(e.target.value)}
+                      className="px-2 py-2 border border-quinta-200 rounded-xl text-xs bg-white focus:ring-2 focus:ring-quinta-500 font-bold text-quinta-700 shrink-0"
+                    >
+                      <option value="ARS">ARS ($)</option>
+                      <option value="USD">USD (US$)</option>
+                    </select>
+                  </div>
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-quinta-500 uppercase tracking-wider mb-1">Monto Seña</label>
-                  <input
-                    type="number"
-                    placeholder="Seña"
-                    value={montoSenia}
-                    onChange={(e) => setMontoSenia(e.target.value)}
-                    className="w-full px-3 py-2 border border-quinta-200 rounded-xl text-sm focus:ring-2 focus:ring-quinta-500 focus:outline-none"
-                  />
+                  <div className="flex gap-1.5">
+                    <input
+                      type="number"
+                      placeholder="Seña"
+                      value={montoSenia}
+                      onChange={(e) => setMontoSenia(e.target.value)}
+                      className="flex-1 min-w-0 px-3 py-2 border border-quinta-200 rounded-xl text-sm focus:ring-2 focus:ring-quinta-500 focus:outline-none"
+                    />
+                    <select
+                      value={divisaSenia}
+                      onChange={(e) => setDivisaSenia(e.target.value)}
+                      className="px-2 py-2 border border-quinta-200 rounded-xl text-xs bg-white focus:ring-2 focus:ring-quinta-500 font-bold text-quinta-700 shrink-0"
+                    >
+                      <option value="ARS">ARS ($)</option>
+                      <option value="USD">USD (US$)</option>
+                    </select>
+                  </div>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -330,7 +362,11 @@ export default function Reservas({ autoOpen }) {
       <div className="space-y-4">
         {filteredReservas.length > 0 ? (
           filteredReservas.map(res => {
-            const saldo = res.monto_total - res.monto_senia;
+            const symTotal = res.divisa_total === 'USD' ? 'US$' : '$';
+            const symSenia = res.divisa_senia === 'USD' ? 'US$' : '$';
+            const sameDivisa = res.divisa_total === res.divisa_senia;
+            
+            const saldo = sameDivisa ? (res.monto_total - res.monto_senia) : null;
             return (
               <div key={res.id} className="bg-white p-5 rounded-2xl border border-quinta-100 shadow-sm space-y-4">
                 <div className="flex justify-between items-start">
@@ -364,16 +400,24 @@ export default function Reservas({ autoOpen }) {
                 <div className="grid grid-cols-3 gap-3 bg-quinta-50/50 p-3 rounded-xl border border-quinta-100 text-center text-xs font-semibold">
                   <div>
                     <span className="text-[10px] text-quinta-400 block font-bold">PRECIO TOTAL</span>
-                    <span className="text-sm font-bold text-quinta-800">${res.monto_total}</span>
+                    <span className="text-sm font-bold text-quinta-800">{symTotal} {res.monto_total}</span>
                   </div>
                   <div>
                     <span className="text-[10px] text-quinta-400 block font-bold">SEÑA</span>
-                    <span className="text-sm font-bold text-emerald-600">${res.monto_senia}</span>
+                    <span className="text-sm font-bold text-emerald-600">{symSenia} {res.monto_senia}</span>
                   </div>
                   <div>
                     <span className="text-[10px] text-quinta-400 block font-bold">SALDO</span>
-                    <span className={`text-sm font-bold ${saldo > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
-                      ${saldo}
+                    <span className={`text-sm font-bold ${res.estado_pago === 'total_pagado' ? 'text-emerald-600' : 'text-amber-600'}`}>
+                      {res.estado_pago === 'total_pagado' ? (
+                        sameDivisa ? `${symTotal} 0` : 'Saldado'
+                      ) : (
+                        sameDivisa ? (
+                          `${symTotal} ${saldo}`
+                        ) : (
+                          `Debe ${symTotal} ${res.monto_total}`
+                        )
+                      )}
                     </span>
                   </div>
                 </div>
