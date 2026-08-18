@@ -237,15 +237,15 @@ export const api = {
           clienteId = newCl.id;
         }
 
-        // Chequear solapamiento
+        // Chequear solapamiento - Solo con reservas CONFIRMADAS!
         const isOverlap = list.some(r =>
-          r.estado_reserva !== 'cancelada' &&
+          r.estado_reserva === 'confirmada' &&
           r.fecha_inicio <= data.fecha_fin &&
           r.fecha_fin >= data.fecha_inicio
         );
 
         if (isOverlap) {
-          throw new Error('La quinta ya está reservada para ese rango de fechas.');
+          throw new Error('La quinta ya está alquilada (reserva confirmada) para ese rango de fechas.');
         }
 
         const currentClient = clientes.find(cl => cl.id === clienteId);
@@ -264,6 +264,22 @@ export const api = {
 
         list.push(newItem);
         setStorageItem('quinta_reservas', list);
+
+        // Auto-crear visita mock si requiere_visita
+        if (data.requiere_visita && data.fecha_hora_visita) {
+          const vList = getStorageItem('quinta_visitas');
+          vList.push({
+            id: 'v_' + Date.now(),
+            cliente_id: clienteId,
+            nombre_visitante: null,
+            fecha_hora_visita: data.fecha_hora_visita,
+            motivo: data.motivo_visita || 'Conocer la quinta (Visita Previa)',
+            notas: data.notas_visita || '',
+            reserva_id: newItem.id,
+            clientes: currentClient
+          });
+          setStorageItem('quinta_visitas', vList);
+        }
 
         // Registrar seña en contabilidad automáticamente
         if (newItem.monto_senia > 0) {
@@ -298,22 +314,39 @@ export const api = {
         const list = getStorageItem('quinta_reservas');
         const index = list.findIndex(i => i.id === id);
         if (index !== -1) {
-          // Chequear solapamiento excluyendo la actual
-          const isOverlap = list.some(r =>
-            r.id !== id &&
-            r.estado_reserva !== 'cancelada' &&
-            r.fecha_inicio <= data.fecha_fin &&
-            r.fecha_fin >= data.fecha_inicio
-          );
+          const oldItem = list[index];
+          const newEstado = data.estado_reserva !== undefined ? data.estado_reserva : oldItem.estado_reserva;
 
-          if (isOverlap) {
-            throw new Error('La quinta ya está reservada para ese rango de fechas.');
+          // Chequear solapamiento excluyendo la actual - Solo con reservas CONFIRMADAS!
+          if (newEstado === 'confirmada') {
+            const isOverlap = list.some(r =>
+              r.id !== id &&
+              r.estado_reserva === 'confirmada' &&
+              r.fecha_inicio <= (data.fecha_fin || oldItem.fecha_fin) &&
+              r.fecha_fin >= (data.fecha_inicio || oldItem.fecha_inicio)
+            );
+
+            if (isOverlap) {
+              throw new Error('La quinta ya está reservada y confirmada para ese rango de fechas.');
+            }
           }
 
-          const oldItem = list[index];
           const updated = { ...oldItem, ...data };
           list[index] = updated;
           setStorageItem('quinta_reservas', list);
+
+          // Si pasa a confirmada, auto-cancelar pre-reservas superpuestas en mock
+          if (newEstado === 'confirmada' && oldItem.estado_reserva !== 'confirmada') {
+            const targetStart = data.fecha_inicio || oldItem.fecha_inicio;
+            const targetEnd = data.fecha_fin || oldItem.fecha_fin;
+            list.forEach((r, idx) => {
+              if (r.id !== id && r.estado_reserva === 'pre-reserva' && r.fecha_inicio <= targetEnd && r.fecha_fin >= targetStart) {
+                list[idx].estado_reserva = 'cancelada';
+                list[idx].notas = `Cancelada automáticamente por conflicto con la reserva confirmada de ${updated.clientes?.nombre || 'Cliente'}.`;
+              }
+            });
+            setStorageItem('quinta_reservas', list);
+          }
 
           // Si pasó a pagado total y antes no lo estaba, auto-registrar saldo
           if (data.estado_pago === 'total_pagado' && oldItem.estado_pago !== 'total_pagado') {

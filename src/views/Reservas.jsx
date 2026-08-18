@@ -39,6 +39,12 @@ export default function Reservas({ autoOpen }) {
   const [estadoPago, setEstadoPago] = useState('pendiente');
   const [estadoReserva, setEstadoReserva] = useState('pre-reserva');
   const [notas, setNotas] = useState('');
+  
+  // Visita previa integrada
+  const [requiereVisita, setRequiereVisita] = useState(false);
+  const [fechaHoraVisita, setFechaHoraVisita] = useState('');
+  const [motivoVisita, setMotivoVisita] = useState('Conocer la quinta (Visita Previa)');
+  const [notasVisita, setNotasVisita] = useState('');
 
   useEffect(() => {
     fetchData();
@@ -79,7 +85,12 @@ export default function Reservas({ autoOpen }) {
         divisa_senia: divisaSenia,
         estado_pago: estadoPago,
         estado_reserva: estadoReserva,
-        notas
+        notas,
+        // Nuevos campos
+        requiere_visita: requiereVisita,
+        fecha_hora_visita: requiereVisita ? fechaHoraVisita : null,
+        motivo_visita: motivoVisita,
+        notas_visita: notasVisita
       });
 
       // Resetear
@@ -94,6 +105,8 @@ export default function Reservas({ autoOpen }) {
       setEstadoPago('pendiente');
       setEstadoReserva('pre-reserva');
       setNotas('');
+      setRequiereVisita(false);
+      setFechaHoraVisita('');
       setShowAddForm(false);
       fetchData();
     } catch (err) {
@@ -159,12 +172,12 @@ export default function Reservas({ autoOpen }) {
   return (
     <div className="space-y-6 pb-20 md:pb-6">
       <div className="flex items-center justify-between border-b border-quinta-100 pb-4">
-        <h2 className="text-2xl font-extrabold text-quinta-900 tracking-tight">Reservas</h2>
+        <h2 className="text-2xl font-extrabold text-quinta-900 tracking-tight">Solicitudes y Reservas</h2>
         <button
           onClick={() => setShowAddForm(true)}
           className="flex items-center gap-1.5 px-4 py-2 bg-quinta-500 hover:bg-quinta-600 text-white rounded-xl text-xs font-bold shadow-md shadow-quinta-500/25 transition-all-300"
         >
-          <Plus size={16} /> Nueva Reserva
+          <Plus size={16} /> Nueva Solicitud
         </button>
       </div>
 
@@ -175,7 +188,7 @@ export default function Reservas({ autoOpen }) {
             <button onClick={() => setShowAddForm(false)} className="absolute top-4 right-4 text-quinta-400 hover:text-quinta-600 transition-all-300">
               <X size={20} />
             </button>
-            <h3 className="text-lg font-bold text-quinta-900 mb-4">Registrar Reserva</h3>
+            <h3 className="text-lg font-bold text-quinta-900 mb-4">Registrar Solicitud / Reserva</h3>
             <form onSubmit={handleAddSubmit} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-quinta-500 uppercase tracking-wider mb-1">Nombre del Cliente</label>
@@ -341,11 +354,38 @@ export default function Reservas({ autoOpen }) {
                   className="w-full px-3 py-2 border border-quinta-200 rounded-xl text-sm focus:ring-2 focus:ring-quinta-500 focus:outline-none"
                 />
               </div>
+
+              {/* Toggle Visita Previa */}
+              <div className="border border-quinta-100 rounded-xl p-3 bg-quinta-50/30 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-quinta-700">¿Requiere visita previa?</span>
+                  <button
+                    type="button"
+                    onClick={() => setRequiereVisita(!requiereVisita)}
+                    className={`w-10 h-5 rounded-full p-0.5 transition-colors duration-300 focus:outline-none ${requiereVisita ? 'bg-quinta-500' : 'bg-quinta-200'}`}
+                  >
+                    <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-300 ${requiereVisita ? 'translate-x-5' : 'translate-x-0'}`} />
+                  </button>
+                </div>
+
+                {requiereVisita && (
+                  <div className="space-y-3 animate-slideDown">
+                    <div>
+                      <label className="block text-[10px] font-extrabold text-quinta-500 uppercase tracking-wider mb-1">Fecha y Hora de la Visita</label>
+                      <CustomDateTimePicker
+                        value={fechaHoraVisita}
+                        onChange={setFechaHoraVisita}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <button
                 type="submit"
                 className="w-full py-2.5 bg-quinta-500 hover:bg-quinta-600 text-white rounded-xl text-sm font-bold shadow-md shadow-quinta-500/25 transition-all-300"
               >
-                Crear Reserva
+                Crear Solicitud
               </button>
             </form>
           </div>
@@ -476,6 +516,16 @@ export default function Reservas({ autoOpen }) {
                 {/* Acciones de Cobro y WhatsApp */}
                 <div className="pt-3 border-t border-quinta-50 flex flex-wrap gap-2 justify-between items-center">
                   <div className="flex gap-2">
+                    {/* Botón rápido de Confirmar y Señar para pre-reservas */}
+                    {res.estado_reserva === 'pre-reserva' && (
+                      <button
+                        onClick={() => handleStatusChange(res.id, { estado_reserva: 'confirmada', estado_pago: 'senia_pagada' })}
+                        className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white rounded-xl text-xs font-black shadow-md shadow-emerald-500/20 uppercase tracking-wider transition-all-300"
+                      >
+                        <BookmarkCheck size={14} /> Confirmar y Señar
+                      </button>
+                    )}
+
                     {/* Botones de acción de Pago */}
                     {res.estado_pago !== 'total_pagado' && res.estado_reserva !== 'cancelada' && (
                       <button
@@ -485,7 +535,7 @@ export default function Reservas({ autoOpen }) {
                         <DollarSign size={14} /> Cobrar Total
                       </button>
                     )}
-                    {res.estado_pago === 'pendiente' && res.estado_reserva !== 'cancelada' && (
+                    {res.estado_pago === 'pendiente' && res.estado_reserva !== 'cancelada' && res.estado_reserva !== 'pre-reserva' && (
                       <button
                         onClick={() => handleStatusChange(res.id, { estado_pago: 'senia_pagada' })}
                         className="flex items-center gap-1 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 rounded-lg text-xs font-bold transition-all-300"
@@ -673,6 +723,132 @@ function CustomDatePicker({ value, onChange, align = 'left' }) {
                 );
               })}
             </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function CustomDateTimePicker({ value, onChange }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const initialDateStr = value ? value.split('T')[0] : '';
+  const initialTimeStr = value ? value.split('T')[1] : '16:00';
+  
+  const [selectedDate, setSelectedDate] = useState(initialDateStr);
+  const [selectedTime, setSelectedTime] = useState(initialTimeStr);
+  const [currentDate, setCurrentDate] = useState(initialDateStr ? new Date(initialDateStr + 'T00:00:00') : new Date());
+
+  const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
+  const firstDayIndex = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay();
+  const startOffset = firstDayIndex === 0 ? 6 : firstDayIndex - 1;
+
+  const cells = [];
+  const prevDays = new Date(currentDate.getFullYear(), currentDate.getMonth(), 0).getDate();
+  for (let i = startOffset - 1; i >= 0; i--) {
+    cells.push({ date: new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, prevDays - i), isCurrent: false });
+  }
+  for (let i = 1; i <= daysInMonth; i++) {
+    cells.push({ date: new Date(currentDate.getFullYear(), currentDate.getMonth(), i), isCurrent: true });
+  }
+  const total = cells.length;
+  const remaining = total % 7 === 0 ? 0 : 7 - (total % 7);
+  for (let i = 1; i <= remaining; i++) {
+    cells.push({ date: new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, i), isCurrent: false });
+  }
+
+  const handleSelectDay = (cellDate) => {
+    const y = cellDate.getFullYear();
+    const m = String(cellDate.getMonth() + 1).padStart(2, '0');
+    const d = String(cellDate.getDate()).padStart(2, '0');
+    setSelectedDate(`${y}-${m}-${d}`);
+  };
+
+  const handleConfirm = () => {
+    if (!selectedDate) {
+      alert('Por favor selecciona un día');
+      return;
+    }
+    onChange(`${selectedDate}T${selectedTime}`);
+    setIsOpen(false);
+  };
+
+  const displayVal = value 
+    ? new Date(value).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) + ' hs'
+    : 'Seleccionar fecha y hora...';
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full px-3 py-2 border border-quinta-200 rounded-xl text-sm bg-white focus:ring-2 focus:ring-quinta-500 text-left flex justify-between items-center font-semibold text-quinta-850 focus:outline-none"
+      >
+        <span>{displayVal}</span>
+        <CalendarDays size={16} className="text-quinta-400 shrink-0" />
+      </button>
+
+      {isOpen && (
+        <>
+          <div className="fixed inset-0 z-20" onClick={() => setIsOpen(false)} />
+          <div className="absolute z-35 mt-1.5 w-[280px] left-0 md:left-auto md:right-0 bg-white border border-quinta-100 rounded-xl shadow-lg p-3 animate-scaleUp space-y-3 font-sans">
+            <div className="flex items-center justify-between">
+              <button type="button" onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))} className="p-1 hover:bg-quinta-100 rounded">
+                <ChevronLeft size={16} />
+              </button>
+              <span className="text-xs font-bold text-quinta-900 capitalize">
+                {currentDate.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' })}
+              </span>
+              <button type="button" onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))} className="p-1 hover:bg-quinta-100 rounded">
+                <ChevronRight size={16} />
+              </button>
+            </div>
+            
+            <div className="grid grid-cols-7 text-center text-[10px] font-bold text-quinta-400 uppercase">
+              <span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span><span>D</span>
+            </div>
+
+            <div className="grid grid-cols-7 gap-1 text-center">
+              {cells.map((cell, idx) => {
+                const cStr = cell.date.toISOString().split('T')[0];
+                const isSelected = selectedDate === cStr;
+                return (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => handleSelectDay(cell.date)}
+                    className={`py-1 text-xs rounded transition-all-300 font-semibold ${
+                      isSelected 
+                        ? 'bg-quinta-500 text-white font-extrabold shadow-sm'
+                        : cell.isCurrent 
+                          ? 'text-quinta-850 hover:bg-quinta-50' 
+                          : 'text-quinta-300'
+                    }`}
+                  >
+                    {cell.date.getDate()}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Time select */}
+            <div className="flex items-center justify-between border-t border-quinta-50 pt-2.5">
+              <span className="text-[11px] font-bold text-quinta-500">Hora:</span>
+              <input
+                type="time"
+                value={selectedTime}
+                onChange={(e) => setSelectedTime(e.target.value)}
+                className="px-2 py-1 border border-quinta-200 rounded-lg text-xs font-bold focus:ring-2 focus:ring-quinta-500 focus:outline-none"
+              />
+            </div>
+
+            <button
+              type="button"
+              onClick={handleConfirm}
+              className="w-full py-1.5 bg-quinta-500 hover:bg-quinta-600 text-white font-bold rounded-lg text-xs shadow-sm transition-all-300"
+            >
+              Confirmar
+            </button>
           </div>
         </>
       )}

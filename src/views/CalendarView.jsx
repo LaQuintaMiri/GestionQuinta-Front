@@ -95,22 +95,23 @@ export default function CalendarView() {
   const getDayStatus = (cellDate) => {
     const dateStr = getLocalDayStr(cellDate);
     
-    // Buscar reservas confirmadas
-    const res = reservas.find(r => 
-      r.estado_reserva !== 'cancelada' &&
+    // 1. Buscar reservas confirmadas
+    const resConf = reservas.find(r => 
+      r.estado_reserva === 'confirmada' &&
       r.fecha_inicio <= dateStr &&
       r.fecha_fin >= dateStr
     );
-    if (res) return { status: 'reservado', data: res };
+    if (resConf) return { status: 'reservado', data: resConf };
 
-    // Buscar consultas
-    const con = consultas.find(c => 
-      c.estado === 'pendiente' &&
-      c.fecha_interes === dateStr
+    // 2. Buscar pre-reservas (solicitudes pendientes)
+    const resPre = reservas.find(r => 
+      r.estado_reserva === 'pre-reserva' &&
+      r.fecha_inicio <= dateStr &&
+      r.fecha_fin >= dateStr
     );
-    if (con) return { status: 'consulta', data: con };
+    if (resPre) return { status: 'pre-reserva', data: resPre };
 
-    // Buscar visitas
+    // 3. Buscar visitas
     const vis = visitas.find(v => {
       const vDate = new Date(v.fecha_hora_visita);
       const visitDateStr = getLocalDayStr(vDate);
@@ -129,13 +130,6 @@ export default function CalendarView() {
     reservas.forEach(r => {
       if (r.estado_reserva !== 'cancelada' && r.fecha_inicio <= dateStr && r.fecha_fin >= dateStr) {
         dayEvents.push({ type: 'reserva', ...r });
-      }
-    });
-
-    // Buscar consultas
-    consultas.forEach(c => {
-      if (c.fecha_interes === dateStr) {
-        dayEvents.push({ type: 'consulta', ...c });
       }
     });
 
@@ -180,7 +174,7 @@ export default function CalendarView() {
           <span className="w-2.5 h-2.5 rounded-full bg-red-500"></span> Reservado
         </div>
         <div className="flex items-center justify-center gap-1.5 py-1 rounded-lg bg-amber-50 text-amber-800">
-          <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span> Consulta
+          <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span> Solicitud
         </div>
         <div className="flex items-center justify-center gap-1.5 py-1 rounded-lg bg-sky-50 text-sky-800">
           <span className="w-2.5 h-2.5 rounded-full bg-sky-400"></span> Visita
@@ -229,7 +223,7 @@ export default function CalendarView() {
                 bgColor = 'bg-red-50 hover:bg-red-100';
                 textColor = 'text-red-900 font-bold';
                 dotColor = 'bg-red-500';
-              } else if (dayStatus.status === 'consulta') {
+              } else if (dayStatus.status === 'pre-reserva') {
                 bgColor = 'bg-amber-50 hover:bg-amber-100';
                 textColor = 'text-amber-900 font-bold';
                 dotColor = 'bg-amber-500';
@@ -242,7 +236,7 @@ export default function CalendarView() {
               }
             }
 
-            const isToday = new Date().toISOString().split('T')[0] === cell.date.toISOString().split('T')[0];
+            const isToday = new Date().toLocaleDateString('es-AR') === cell.date.toLocaleDateString('es-AR');
 
             return (
               <button
@@ -265,7 +259,7 @@ export default function CalendarView() {
                       {dayStatus.data.clientes?.nombre}
                     </span>
                   )}
-                  {dayStatus.status === 'consulta' && (
+                  {dayStatus.status === 'pre-reserva' && (
                     <span className="text-[9px] truncate block text-amber-700 bg-amber-100 px-1 rounded">
                       {dayStatus.data.clientes?.nombre}
                     </span>

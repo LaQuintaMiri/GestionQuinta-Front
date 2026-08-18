@@ -72,24 +72,18 @@ export default function Dashboard({ onViewChange, onOpenQuickAction }) {
   };
 
   const handleDayClick = (dateStr) => {
-    if (searchType === 'visita') {
+    if (!startDate || (startDate && endDate)) {
       setStartDate(dateStr);
       setEndDate('');
-      checkVisitAvailability(dateStr, visitTime);
+      checkRangeAvailability(dateStr, dateStr);
     } else {
-      if (!startDate || (startDate && endDate)) {
+      if (dateStr < startDate) {
         setStartDate(dateStr);
         setEndDate('');
         checkRangeAvailability(dateStr, dateStr);
       } else {
-        if (dateStr < startDate) {
-          setStartDate(dateStr);
-          setEndDate('');
-          checkRangeAvailability(dateStr, dateStr);
-        } else {
-          setEndDate(dateStr);
-          checkRangeAvailability(startDate, dateStr);
-        }
+        setEndDate(dateStr);
+        checkRangeAvailability(startDate, dateStr);
       }
     }
   };
@@ -101,11 +95,8 @@ export default function Dashboard({ onViewChange, onOpenQuickAction }) {
       r.fecha_fin >= start
     );
 
-    const consultasRango = consultas.filter(c => 
-      c.estado === 'pendiente' &&
-      c.fecha_interes >= start &&
-      c.fecha_interes <= end
-    );
+    const confirmadas = overlapping.filter(r => r.estado_reserva === 'confirmada');
+    const preReservas = overlapping.filter(r => r.estado_reserva === 'pre-reserva');
 
     const visitasRango = visitas.filter(v => {
       const vDate = new Date(v.fecha_hora_visita);
@@ -114,39 +105,9 @@ export default function Dashboard({ onViewChange, onOpenQuickAction }) {
     });
 
     setCheckResult({
-      reservasConflicto: overlapping,
-      consultas: consultasRango,
+      confirmadas,
+      preReservas,
       visitas: visitasRango
-    });
-  };
-
-  const checkVisitAvailability = (dateStr, timeStr) => {
-    if (!dateStr || !timeStr) return;
-
-    // 1. ¿Hay reserva activa ese día?
-    const booking = reservas.find(r => 
-      r.estado_reserva !== 'cancelada' &&
-      r.fecha_inicio <= dateStr &&
-      r.fecha_fin >= dateStr
-    );
-
-    // 2. ¿Hay conflicto de proximidad con otras visitas? (90 minutos)
-    const targetDt = new Date(`${dateStr}T${timeStr}:00`);
-    const minDiffMs = 90 * 60 * 1000;
-
-    const nearby = visitas.find(v => {
-      const otherDt = new Date(v.fecha_hora_visita);
-      const otherDateStr = `${otherDt.getFullYear()}-${String(otherDt.getMonth() + 1).padStart(2, '0')}-${String(otherDt.getDate()).padStart(2, '0')}`;
-      const sameDay = otherDateStr === dateStr;
-      if (!sameDay) return false;
-      return Math.abs(targetDt.getTime() - otherDt.getTime()) < minDiffMs;
-    });
-
-    setVisitResult({
-      hasBooking: booking,
-      nearbyVisit: nearby,
-      targetDate: dateStr,
-      targetTime: timeStr
     });
   };
 
@@ -258,71 +219,28 @@ export default function Dashboard({ onViewChange, onOpenQuickAction }) {
         </div>
       </div>
 
-      {/* Buscador Rápido de Disponibilidad por Rango o Visita */}
+      {/* Buscador Rápido de Disponibilidad por Rango */}
       <div className="bg-white p-5 rounded-2xl border border-quinta-100 shadow-sm space-y-4">
         
         {/* Selector de Tipo de Búsqueda */}
-        <div className="flex justify-between items-center border-b border-quinta-50 pb-3 gap-4">
+        <div className="flex items-center justify-between border-b border-quinta-50 pb-3 gap-4">
           <div className="flex items-center gap-2 text-quinta-900">
             <Search size={20} className="text-quinta-500" />
-            <h3 className="font-bold text-base">Buscador Rápido</h3>
-          </div>
-          
-          <div className="flex bg-quinta-100/80 p-0.5 rounded-lg border border-quinta-200/50 shrink-0">
-            <button
-              onClick={() => {
-                setSearchType('alquiler');
-                setStartDate('');
-                setEndDate('');
-                setCheckResult(null);
-                setVisitResult(null);
-              }}
-              className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all-300 ${
-                searchType === 'alquiler'
-                  ? 'bg-white text-quinta-900 shadow-sm'
-                  : 'text-quinta-500 hover:text-quinta-700'
-              }`}
-            >
-              Alquileres
-            </button>
-            <button
-              onClick={() => {
-                setSearchType('visita');
-                setStartDate('');
-                setEndDate('');
-                setCheckResult(null);
-                setVisitResult(null);
-              }}
-              className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all-300 ${
-                searchType === 'visita'
-                  ? 'bg-white text-quinta-900 shadow-sm'
-                  : 'text-quinta-500 hover:text-quinta-700'
-              }`}
-            >
-              Visitas
-            </button>
+            <h3 className="font-bold text-base">Buscador de Disponibilidad</h3>
           </div>
         </div>
 
         <div className="flex items-center justify-between text-xs font-bold text-quinta-600 bg-quinta-50 p-2.5 rounded-lg">
-          <span>{searchType === 'alquiler' ? 'Buscar Disponibilidad de Rango:' : 'Buscar Horario de Visita:'}</span>
+          <span>Seleccionar Rango de Fechas:</span>
           <span className="text-quinta-850">
-            {searchType === 'alquiler' ? (
-              startDate ? (
-                endDate ? (
-                  `Del ${new Date(startDate + 'T00:00:00').toLocaleDateString('es-AR', {day:'numeric', month:'short'})} al ${new Date(endDate + 'T00:00:00').toLocaleDateString('es-AR', {day:'numeric', month:'short'})}`
-                ) : (
-                  `Desde el ${new Date(startDate + 'T00:00:00').toLocaleDateString('es-AR', {day:'numeric', month:'short'})} (esperando fin)`
-                )
+            {startDate ? (
+              endDate ? (
+                `Del ${new Date(startDate + 'T00:00:00').toLocaleDateString('es-AR', {day:'numeric', month:'short'})} al ${new Date(endDate + 'T00:00:00').toLocaleDateString('es-AR', {day:'numeric', month:'short'})}`
               ) : (
-                'Toca el inicio y fin en el mapa'
+                `Desde el ${new Date(startDate + 'T00:00:00').toLocaleDateString('es-AR', {day:'numeric', month:'short'})} (esperando fin)`
               )
             ) : (
-              startDate ? (
-                `Día: ${new Date(startDate + 'T00:00:00').toLocaleDateString('es-AR', {day:'numeric', month:'short'})}`
-              ) : (
-                'Toca el día de la visita'
-              )
+              'Toca el inicio y fin en el calendario'
             )}
           </span>
         </div>
@@ -367,17 +285,22 @@ export default function Dashboard({ onViewChange, onOpenQuickAction }) {
               // Lógica de Selección de Rango o Día Único
               const isStart = startDate === dStr;
               const isEnd = endDate === dStr;
-              const isInRange = searchType === 'alquiler' && startDate && endDate && dStr > startDate && dStr < endDate;
-              const isSelectedSingle = startDate && (searchType === 'visita' || !endDate) && isStart;
+              const isInRange = startDate && endDate && dStr > startDate && dStr < endDate;
+              const isSelectedSingle = startDate && !endDate && isStart;
 
               // Buscar reservas, visitas o consultas para colorear los días
-              const isBooked = reservas.some(r => r.estado_reserva !== 'cancelada' && r.fecha_inicio <= dStr && r.fecha_fin >= dStr);
-              const hasVis = visitas.some(v => new Date(v.fecha_hora_visita).toISOString().split('T')[0] === dStr);
+              const isConfirmed = reservas.some(r => r.estado_reserva === 'confirmada' && r.fecha_inicio <= dStr && r.fecha_fin >= dStr);
+              const isPending = reservas.some(r => r.estado_reserva === 'pre-reserva' && r.fecha_inicio <= dStr && r.fecha_fin >= dStr);
+              const hasVis = visitas.some(v => {
+                const vDate = new Date(v.fecha_hora_visita);
+                return `${vDate.getFullYear()}-${String(vDate.getMonth() + 1).padStart(2, '0')}-${String(vDate.getDate()).padStart(2, '0')}` === dStr;
+              });
 
               let statusColor = 'bg-white hover:bg-quinta-50/40 text-quinta-850';
               
-              if (isBooked) statusColor = 'bg-red-50 hover:bg-red-100 text-red-700 font-bold';
-              else if (hasVis) statusColor = 'bg-sky-50 hover:bg-sky-100 text-sky-700 font-bold';
+              if (isConfirmed) statusColor = 'bg-red-50 hover:bg-red-100 text-red-700 font-bold';
+              else if (isPending) statusColor = 'bg-amber-50 hover:bg-amber-100 text-amber-750 font-bold';
+              else if (hasVis) statusColor = 'bg-sky-50 hover:bg-sky-100 text-sky-750 font-bold';
 
               if (!cell.isCurrent) {
                 statusColor = 'bg-quinta-50/20 text-quinta-300';
@@ -387,8 +310,10 @@ export default function Dashboard({ onViewChange, onOpenQuickAction }) {
               if (isStart || isEnd || isSelectedSingle) {
                 statusColor = 'bg-quinta-500 hover:bg-quinta-600 text-white font-extrabold shadow-sm';
               } else if (isInRange) {
-                if (isBooked) {
+                if (isConfirmed) {
                   statusColor = 'bg-red-200 text-red-950 font-bold border-y border-red-300';
+                } else if (isPending) {
+                  statusColor = 'bg-amber-255 text-amber-950 font-bold border-y border-amber-300';
                 } else if (hasVis) {
                   statusColor = 'bg-sky-200 text-sky-950 font-bold';
                 } else {
@@ -425,17 +350,18 @@ export default function Dashboard({ onViewChange, onOpenQuickAction }) {
           </div>
         )}
 
-        {/* RESULTADOS DE ALQUILERES */}
-        {searchType === 'alquiler' && checkResult && startDate && (
+        {/* RESULTADOS DE DISPONIBILIDAD */}
+        {checkResult && startDate && (
           <div className="animate-fadeIn mt-2">
-            {checkResult.reservasConflicto.length > 0 ? (
+            {checkResult.confirmadas.length > 0 ? (
+              /* Bloque Ocupado (Rojo) */
               <div className="p-4 bg-red-50 border border-red-100 text-red-950 rounded-xl flex items-start gap-3 text-xs font-semibold">
                 <XCircle size={20} className="text-red-500 shrink-0 mt-0.5" />
                 <div className="space-y-1">
-                  <h4 className="font-extrabold text-sm text-red-900">Ocupado (Conflicto en el Rango)</h4>
-                  <p>La quinta ya tiene reservas activas en ese rango de fechas:</p>
+                  <h4 className="font-extrabold text-sm text-red-900">Ocupado (Reserva Confirmada)</h4>
+                  <p>La quinta ya está reservada y señada en ese rango de fechas:</p>
                   <ul className="list-disc pl-4 space-y-1 font-bold text-red-800">
-                    {checkResult.reservasConflicto.map(r => (
+                    {checkResult.confirmadas.map(r => (
                       <li key={r.id}>
                         {r.clientes?.nombre} ({r.fecha_inicio} al {r.fecha_fin})
                       </li>
@@ -444,15 +370,33 @@ export default function Dashboard({ onViewChange, onOpenQuickAction }) {
                 </div>
               </div>
             ) : (
+              /* Disponible o Disponible con pre-reservas (Amarillo/Verde) */
               <div className="space-y-3">
-                {checkResult.visitas.length > 0 && (
-                  <div className="p-4 bg-amber-50 border border-amber-100 text-amber-950 rounded-xl space-y-1 text-xs font-semibold">
+                {checkResult.preReservas.length > 0 && (
+                  <div className="p-4 bg-amber-50 border border-amber-100 text-amber-950 rounded-xl space-y-2 text-xs font-semibold">
                     <div className="flex items-center gap-2 text-amber-800">
                       <AlertCircle size={18} />
+                      <h4 className="font-bold text-sm">Solicitudes Pendientes (Sin Señar aún)</h4>
+                    </div>
+                    <p className="text-[11px] text-amber-850">Estas solicitudes compiten por las fechas. El primero en confirmar y señar se queda con la quinta:</p>
+                    <ul className="list-disc pl-4 space-y-1 font-bold text-amber-800">
+                      {checkResult.preReservas.map(r => (
+                        <li key={r.id}>
+                          {r.clientes?.nombre} ({r.fecha_inicio} al {r.fecha_fin})
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {checkResult.visitas.length > 0 && (
+                  <div className="p-4 bg-sky-50 border border-sky-100 text-sky-950 rounded-xl space-y-1 text-xs font-semibold">
+                    <div className="flex items-center gap-2 text-sky-850">
+                      <CalendarDays size={18} className="text-sky-600" />
                       <h4 className="font-bold text-sm">Visitas Programadas en el Rango</h4>
                     </div>
                     {checkResult.visitas.map(vis => (
-                      <div key={vis.id} className="pl-2 border-l-2 border-sky-300 text-sky-950">
+                      <div key={vis.id} className="pl-2 border-l-2 border-sky-300 text-sky-900 font-bold">
                         {vis.nombre_visitante || vis.clientes?.nombre}: {new Date(vis.fecha_hora_visita).toLocaleDateString('es-AR')} a las {new Date(vis.fecha_hora_visita).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })} hs
                       </div>
                     ))}
@@ -462,8 +406,8 @@ export default function Dashboard({ onViewChange, onOpenQuickAction }) {
                 <div className="p-4 bg-emerald-50 border border-emerald-100 text-emerald-950 rounded-xl flex items-start gap-3 text-xs font-semibold">
                   <Check size={20} className="text-emerald-500 shrink-0 mt-0.5" />
                   <div>
-                    <h4 className="font-extrabold text-sm text-emerald-950">¡Disponible para Alquiler!</h4>
-                    <p>No hay reservas agendadas en este rango de fechas.</p>
+                    <h4 className="font-extrabold text-sm text-emerald-950">¡Disponible para Reservar!</h4>
+                    <p>{checkResult.preReservas.length > 0 ? 'Puedes ingresar una nueva solicitud que compita por estas fechas.' : 'No hay reservas ni solicitudes registradas en este rango.'}</p>
                   </div>
                 </div>
 
@@ -476,7 +420,7 @@ export default function Dashboard({ onViewChange, onOpenQuickAction }) {
                     }}
                     className="flex-1 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl text-xs shadow-md transition-all-300 text-center"
                   >
-                    Registrar Reserva
+                    Agendar Solicitud
                   </button>
                   <button
                     onClick={() => handleDirectWhatsAppShare(startDate, endDate)}
@@ -485,56 +429,6 @@ export default function Dashboard({ onViewChange, onOpenQuickAction }) {
                     Responder por WhatsApp
                   </button>
                 </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* RESULTADOS DE VISITAS */}
-        {searchType === 'visita' && visitResult && startDate && (
-          <div className="animate-fadeIn mt-2">
-            {visitResult.nearbyVisit ? (
-              <div className="p-4 bg-red-50 border border-red-100 text-red-950 rounded-xl flex items-start gap-3 text-xs font-semibold">
-                <XCircle size={20} className="text-red-500 shrink-0 mt-0.5" />
-                <div className="space-y-1">
-                  <h4 className="font-extrabold text-sm text-red-900">Horario de Visita Ocupado</h4>
-                  <p>Ya hay otra visita agendada para ese día a las <span className="font-bold">{new Date(visitResult.nearbyVisit.fecha_hora_visita).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })} hs</span>.</p>
-                  <p className="text-[11px] text-red-700">Debe haber al menos 1:30 hs de diferencia entre visitas para no superponerlas.</p>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {visitResult.hasBooking && (
-                  <div className="p-4 bg-amber-50 border border-amber-100 text-amber-950 rounded-xl flex items-start gap-3 text-xs font-semibold">
-                    <AlertCircle size={20} className="text-amber-500 shrink-0 mt-0.5" />
-                    <div>
-                      <h4 className="font-bold text-sm text-amber-900">Aviso: Quinta Ocupada</h4>
-                      <p>Ese día hay huéspedes alojados (Reserva de: <span className="font-bold">{visitResult.hasBooking.clientes?.nombre}</span>).</p>
-                      <p className="text-[11px] text-amber-700 font-semibold">Puedes programar la visita, pero coordina bien con los huéspedes para no molestarlos.</p>
-                    </div>
-                  </div>
-                )}
-
-                {!visitResult.hasBooking && (
-                  <div className="p-4 bg-emerald-50 border border-emerald-100 text-emerald-950 rounded-xl flex items-start gap-3 text-xs font-semibold">
-                    <Check size={20} className="text-emerald-500 shrink-0 mt-0.5" />
-                    <div>
-                      <h4 className="font-extrabold text-sm text-emerald-950">¡Horario de Visita Disponible!</h4>
-                      <p>No hay conflictos de visitas ni huéspedes alojados en ese horario.</p>
-                    </div>
-                  </div>
-                )}
-
-                <button
-                  onClick={() => {
-                    localStorage.setItem('quinta_prefill_visit_date', startDate);
-                    localStorage.setItem('quinta_prefill_visit_time', visitTime);
-                    onOpenQuickAction('nueva-visita');
-                  }}
-                  className="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl text-xs shadow-md transition-all-300 text-center"
-                >
-                  {visitResult.hasBooking ? 'Agendar Visita de todas formas' : 'Agendar Visita'}
-                </button>
               </div>
             )}
           </div>
